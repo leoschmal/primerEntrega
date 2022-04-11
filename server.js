@@ -17,6 +17,8 @@ routerCarrito.use(express.urlencoded({ extended: true }))
 routerProductos.use(express.json())
 routerCarrito.use(express.json())
 
+let admin = true;
+
 
 //Routeo de Productos
 routerProductos.get('/',(req,res) => {
@@ -29,59 +31,72 @@ routerProductos.get('/',(req,res) => {
     catch(err) {        
         console.log("contenido no leido",err)      
     } 
-    res.send({products:getProducts()})
+    admin ? res.send({products:getProducts()}) : res.send({mensaje:"ACCESO DENEGADO"})
                               })
-
+//GET: '/:id?' - Me permite listar todos los productos disponibles ó un producto por su id (disponible para usuarios y administradores)
 routerProductos.get('/:id',(req,res) => {
     try{     
         const contenido = fs.readFileSync('./productos.txt', 'utf-8');
         const json = JSON.parse(contenido.split(","));
         const id = req.params.id;
         let solicitado= json.filter((el)=> el.id === String(id))
-        solicitado.length !==0 ? res.json(solicitado) : res.json({mensaje: "no existe el producto"})        
+        solicitado.length !==0  ? res.json(solicitado) : res.json({mensaje: "No existe el Producto"})        
     }
     catch(err) {        
         console.log("contenido no leido",err)      
     }
 })
-
+//POST: '/' - Para incorporar productos al listado (disponible para administradores)
 routerProductos.post('/', (req, res)=>{  
-    const contenido = fs.readFileSync('./productos.txt', 'utf-8');
-    const json = JSON.parse(contenido.split(","));  
-    let tamanio = json.length -1;    
-    let id= parseInt(json[tamanio].id);
-    let newProduct= req.query;
-    newProduct.id = String(id +1);
-    newProduct.timestamp = Date.now();
-    json.push(newProduct);
-    res.json(newProduct)
-    fs.writeFileSync('./productos.txt', JSON.stringify(json),'utf-8')
+    if(admin){
+        const contenido = fs.readFileSync('./productos.txt', 'utf-8');
+        const json = JSON.parse(contenido.split(","));  
+        let tamanio = json.length -1;    
+        let id= parseInt(json[tamanio].id);
+        let newProduct= req.query;
+        newProduct.id = String(id +1);
+        newProduct.timestamp = Date.now();
+        json.push(newProduct);
+        fs.writeFileSync('./productos.txt', JSON.stringify(json),'utf-8');
+        res.json(newProduct)
+    }else{
+        res.json({mensaje:"ACCESO DENEGADO"})
+    }    
 })
+//PUT: '/:id' - Actualiza un producto por su id (disponible para administradores)
 routerProductos.put('/:id', (req, res)=>{
-    const contenido = fs.readFileSync('./productos.txt', 'utf-8');
-    const json = JSON.parse(contenido.split(",")); 
-    const id = req.params.id;    
-    //Dato a actualizar
-    //json[id - 1] = req.query;
-    json[id - 1] = req.query;
-    json[id - 1].id = String(id);
-    json[id - 1].timestamp = Date.now();
-    //json.push(newProduct);
-    res.json(json[id - 1]);
-    fs.writeFileSync('./productos.txt', JSON.stringify(json),'utf-8')
+    if(admin){
+        const contenido = fs.readFileSync('./productos.txt', 'utf-8');
+        const json = JSON.parse(contenido.split(",")); 
+        const id = req.params.id;    
+        //Dato a actualizar        
+        json[id - 1] = req.query;
+        json[id - 1].id = String(id);
+        json[id - 1].timestamp = Date.now();
+        //json.push(newProduct);
+        res.json(json[id - 1]);
+        fs.writeFileSync('./productos.txt', JSON.stringify(json),'utf-8')
+    }else{
+        res.json({mensaje:"ACCESO DENEGADO"});
+    }    
 })
-
+//DELETE: '/:id' - Borra un producto por su id (disponible para administradores)
 routerProductos.delete('/:id', (req, res)=>{
-    console.log('entre al delete')
-    const contenido = fs.readFileSync('./productos.txt', 'utf-8');    
-    const json = JSON.parse(contenido.split(",")); 
-    const id = req.params.id;
-    let buscado = json[id - 1];
-    json.splice(id - 1, 1);   
-    res.json(json);
-    fs.writeFileSync('./productos.txt', JSON.stringify(json),'utf-8')
+    if(admin){        
+        const contenido = fs.readFileSync('./productos.txt', 'utf-8');    
+        const json = JSON.parse(contenido.split(",")); 
+        const id = req.params.id;
+        let buscado = json[id - 1];
+        json.splice(id - 1, 1);   
+        res.json(json);
+        fs.writeFileSync('./productos.txt', JSON.stringify(json),'utf-8')
+    }else{
+        res.json({mensaje:"ACCESO DENEGADO"});
+    }
+    
 })
 //Routeo de Carritos
+// Obtengo TODOS los carritos
 routerCarrito.get('/',(req,res) => {
     try{          
       function getCarts(){
