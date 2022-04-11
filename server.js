@@ -94,7 +94,7 @@ routerCarrito.get('/',(req,res) => {
     } 
     res.send({carritos:getCarts()})
                               })
-
+//DELETE: '/:id' - Vacía un carrito y lo elimina.
 routerCarrito.delete('/:id', (req, res)=>{    
     const contenido = fs.readFileSync('./carrito.txt', 'utf-8');    
     const json = JSON.parse(contenido.split(",")); 
@@ -117,7 +117,7 @@ routerCarrito.get('/:id',(req,res) => {
         console.log("contenido no leido",err)      
     }
 })
-
+//POST: '/' - Crea un carrito y devuelve su id.
 routerCarrito.post('/', (req, res)=>{  
     const contenido = fs.readFileSync('./carrito.txt', 'utf-8');
     const json = JSON.parse(contenido.split(","));  
@@ -128,7 +128,7 @@ routerCarrito.post('/', (req, res)=>{
     newCart.timestamp = Date.now();
     newCart.productos = [];
     json.push(newCart);
-    res.json(newCart)
+    res.json(newCart.id)
     fs.writeFileSync('./carrito.txt', JSON.stringify(json),'utf-8')
 })
 //GET: '/:id/productos' - Me permite listar todos los productos guardados en el carrito
@@ -144,6 +144,31 @@ routerCarrito.get('/:id/productos',(req,res) => {
         console.log("contenido no leido",err)      
     }
 })
+//POST: '/:id/productos' - Para incorporar productos al carrito por su id de producto
+routerCarrito.post('/:id/productos', (req, res)=>{
+    const contenido = fs.readFileSync('./carrito.txt', 'utf-8');
+    const json = JSON.parse(contenido.split(","));  
+    const id = req.params.id;
+    let solicitado= json.filter((el)=> el.id === String(id))[0];
+    let producto = req.query;
+    producto.timestamp = Date.now();
+    solicitado.productos.push(producto);
+    res.json(solicitado)
+    fs.writeFileSync('./carrito.txt', JSON.stringify(json),'utf-8')    
+})
+//DELETE: '/:id/productos/:id_prod' - Eliminar un producto del carrito por su id de carrito y de producto
+routerCarrito.delete('/:id/productos/:id_prod', (req, res)=>{
+    const contenido = fs.readFileSync('./carrito.txt', 'utf-8');
+    const json = JSON.parse(contenido.split(","));  
+    const id = req.params.id;
+    const id_prod = req.params.id_prod;
+    let solicitado= json.filter((el)=> el.id === String(id))[0];
+    let producto = solicitado.productos.filter((el)=> el.id === String(id_prod))[0];
+    solicitado.productos.splice(solicitado.productos.indexOf(producto), 1);
+    res.json(solicitado)
+    fs.writeFileSync('./carrito.txt', JSON.stringify(json),'utf-8')
+})
+
 
 
 app.use('/api/productos', routerProductos)
